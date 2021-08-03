@@ -102,12 +102,13 @@ func New(config map[interface{}]interface{}) interface{} {
 func (p *MySQLOutput) Emit(event map[string]interface{}) {
 	var tableName string
 	var keyLen int
+	// 减去TableKey， (再减去 @timestamp 这个key, 如果还有@meta 这些呢, 先通过遍历，然后切片的方式来解决）
 	if v, ok := event[p.TableKey]; ok {
 		tableName = v.(string)
 		keyLen = len(event) - 1
 	} else {
 		tableName = p.DefaultTable
-		keyLen = len(event)
+		keyLen = len(event) - 0
 	}
 	if keyLen == 0 {
 		return
@@ -117,7 +118,7 @@ func (p *MySQLOutput) Emit(event map[string]interface{}) {
 	values := make([]interface{}, keyLen)
 	i := 0
 	for k, v := range event {
-		if k == p.TableKey {
+		if k == p.TableKey || strings.HasPrefix(k, "@") {
 			continue
 		}
 		placeholders[i] = "?"
@@ -125,7 +126,17 @@ func (p *MySQLOutput) Emit(event map[string]interface{}) {
 		values[i] = v
 		i++
 	}
-	sql := fmt.Sprintf("INSERT INTO %s(%S)VALUES(%s)", tableName, strings.Join(fields, ","), strings.Join(placeholders, ","))
+	for i = 1; i <= keyLen; i++ {
+		if placeholders[i-1] != "?" {
+			break
+		}
+	}
+	if i < keyLen {
+		placeholders = placeholders[0:i]
+		fields = fields[0:i]
+		values = values[0:i]
+	}
+	sql := fmt.Sprintf("INSERT INTO %s(%s)VALUES(%s)", tableName, strings.Join(fields, ","), strings.Join(placeholders, ","))
 	stmt, err := p.Conn.Prepare(sql)
 	if err != nil {
 		glog.Error("SQL: ", sql)

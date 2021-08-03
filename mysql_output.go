@@ -126,8 +126,8 @@ func (p *MySQLOutput) Emit(event map[string]interface{}) {
 		values[i] = v
 		i++
 	}
-	for i = 1; i <= keyLen; i++ {
-		if placeholders[i-1] != "?" {
+	for i = 0; i < keyLen; i++ {
+		if placeholders[i] != "?" {
 			break
 		}
 	}

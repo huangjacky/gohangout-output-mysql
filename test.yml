@@ -1,0 +1,16 @@
+inputs:
+    - Stdin:
+        codec: json
+
+outputs:
+    - Stdout:
+        if:
+            - '{{if .error}}y{{end}}'
+    - '/Users/fiendhuang/program/my/gohangout/mysql_output.so':
+        Host: '127.0.0.1'
+        Port: 3306
+        User: 'root'
+        Password: '123'
+        Database: 'test'
+        TableKey: 'table'
+        DefaultTable: 'test'
